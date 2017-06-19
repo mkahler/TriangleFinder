@@ -1,0 +1,202 @@
+﻿﻿
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Triangles</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h2>Triangle Finder</h2>
+        <p>Below is a grid of triangles with 6 rows (A-F) and 12 columns (1 -12).</p>
+        <div>
+            To locate a triangle at specific coordinates: <br />
+            <div class="container">
+                <label>V1</label><br />
+                <div class="row">
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">X</span>
+                            <input type="text" class="form-control" id="v1_x">
+                        </div>
+                    </div>
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">Y</span>
+                            <input type="text" class="form-control" id="v1_y">
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <label>V2</label><br />
+                <div class="row">
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">X</span>
+                            <input type="text" class="form-control" id="v2_x">
+                        </div>
+                    </div>
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">Y</span>
+                            <input type="text" class="form-control" id="v2_y">
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <label>V3</label><br />
+                <div class="row">
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">X</span>
+                            <input type="text" class="form-control" id="v3_x">
+                        </div>
+                    </div>
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon" id="basic-addon2">Y</span>
+                            <input type="text" class="form-control" id="v3_y">
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row">
+                    <div class="col-xs-2">
+                        <button class="btn btn-primary" type="default" id="findIt">Find</button>
+                    </div>
+                    <div class="col-xs-3">
+                        <span id="result"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br />
+        <div>
+            <canvas id="triangles" width="600" height="600">
+                Loading...
+            </canvas>
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        (function () {
+
+            $(document).ready(function () {
+
+                var v1_x = $('#v1_x');
+                var v1_y = $('#v1_y');
+                var v2_x = $('#v2_x');
+                var v2_y = $('#v2_y');
+                var v3_x = $('#v3_x');
+                var v3_y = $('#v3_y');
+                var resultSpan = $('#result');
+                $('#findIt').click(findIt);
+
+                var canvas = document.getElementById('triangles');
+                // each non-hypotenuse side is 10 pixels - use this to take raw coordinates and get desired line lengths
+                var lineLength = 10;
+                var gridId = 0;
+
+                // create grid and then draw the results
+                $.ajax({
+                    method: 'POST',
+                    url: 'api/grid/',
+                    data: { rows: 6, columns: 12 },
+                    dataType: 'json',
+                    success: createGridComplete
+                });
+
+
+                function createGridComplete(data) {
+                    gridId = data.id;
+                    drawGrid(data);
+                }
+
+                function drawGrid(data) {
+
+                    if (data && canvas) {
+                        var ctx = canvas.getContext('2d');
+
+                        // set background and scale up a bit
+                        ctx.scale(10, 10);
+                        ctx.fillStyle = '#6495ED';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        // setup for triangles and text
+                        ctx.strokeStyle = '#bbbbbb';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.lineWidth = .15;
+                        ctx.font = '2px serif';
+
+                        for (var i = 0; i < data.grid.length; i++) {
+                            for (var j = 0; j < data.grid[i].length; j++) {
+                                var t = data.grid[i][j];
+
+                                ctx.beginPath();
+                                ctx.moveTo(t.vertices[0].x * lineLength, t.vertices[0].y * lineLength);
+                                ctx.lineTo(t.vertices[1].x * lineLength, t.vertices[1].y * lineLength);
+                                ctx.lineTo(t.vertices[2].x * lineLength, t.vertices[2].y * lineLength);
+                                ctx.closePath();
+                                ctx.stroke();
+                                // write the label over the triangle
+                                var text_x = 0;
+                                var text_y = 0;
+                                if(j % 2 === 0){
+                                    text_x = t.vertices[1].x + .2;
+                                    text_y = t.vertices[1].y - .2;                                    
+                                } else {
+                                    text_x = t.vertices[0].x + .6;
+                                    text_y = t.vertices[0].y + .3;
+                                }
+                                ctx.fillText(t.label, text_x * lineLength, text_y * lineLength);
+                            }
+                        }
+                    }
+                }
+
+                function findIt() {
+                    resultSpan.html('Looking...');
+
+                    $.ajax({
+                        method: 'POST',
+                        url: 'api/grid/' + gridId + '/triangle/',
+                        data: JSON.stringify({
+                            v1: { x: v1_x.val(), y: v1_y.val() },
+                            v2: { x: v2_x.val(), y: v2_y.val() },
+                            v3: { x: v3_x.val(), y: v3_y.val() }
+                        }),
+                        processData: false,
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        success: function (data) {
+                            var msg = 'No Triangle Found.';
+                            if (data) {
+                                msg = "Triangle found: " + data.label;
+                            }
+
+                            resultSpan.html(msg);
+                        },
+                        error: function () {
+                            resultSpan.html('No Triangle Found.');
+                        }
+                    });
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>
